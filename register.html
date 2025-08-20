@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>RegistrazioneUtente</title>
+    </head>
+    <body>
+        <h2>Registrazione</h2>
+        <form action="/registrazione" method="POST">
+            <label for="username">Username:</label><br>
+            <input type="text" name="username" id="username" required><br>
+            
+            <label for="Email">Email</label><br>
+            <input type="text" name="email" id="email" required><br>
+            
+            <label for="password">Password</label><br> <!--nasconde quello che scrivo-->
+            <input type="password" name="password" id="password" required><br>
+            
+            <label for="conferma_password">Conferma Password</label><br> <!--devo capire perché non nasconde quello che scrivo-->
+            <input type="conferma_password" name="conferma_password" id="conferma_password" required><br><br>
+
+            <input type="submit" value="registrati">
+        </form>
+    </body>
+</html>
