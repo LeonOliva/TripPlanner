@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const {iteneari} = require('../models/itinerari')
+const {itineari} = require('../models/itinerario')
 
 router.get('/', (req, res) => { //visualizza tutti gli itinerari
     res.status(200).json({success:true, data:itenerari})
@@ -26,5 +26,5 @@ router.delete('/:id', (req,res) => { //cancella itinearario
     res.status(200).json({success:true, data:itinerari})
 })
 
-
+module.exports=router;
 

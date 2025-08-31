@@ -1,4 +1,4 @@
-const mongoose = require ('mongoose')
+const mongoose = require('mongoose');
 
 const refreshTokenSchema = new mongoose.Schema({
     token:{
@@ -17,4 +17,4 @@ const refreshTokenSchema = new mongoose.Schema({
     },
 });
 
-module.exports = mongoose.model('RefreshToken',refreshTokenSchema)
+module.exports = mongoose.model('RefreshToken',refreshTokenSchema);
