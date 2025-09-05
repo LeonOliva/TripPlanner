@@ -28,7 +28,7 @@ userSchema.pre('save',async function (next) {
     //hashing con bcrypt
     try{
         const salt = await bcrpyt.genSalt(10); //genera una stringa casuale che rende l'hash unico (anche con stesse password)
-        this.password = await bcrypt.hash (this.password, salt); //crea la password cifrata e la sostituisce alla vecchia password.
+        this.password = await bcrpyt.hash (this.password, salt); //crea la password cifrata e la sostituisce alla vecchia password.
         next(); //Salva la passwrod hashata nel DB (che contiene solo password hashate)
     }catch(error){
         next(error); //non salvare, ferma tutto e restituisci errore

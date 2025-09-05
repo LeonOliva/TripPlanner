@@ -1,7 +1,8 @@
 //Ho compreso tutto il file
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController'); //per chiamare le funzioni ad authcontroller
+const authController = require('../controllers/authController'); //per chiamare le funzioni ad authController
+//authMiddleware = require('../middlewares/authMiddleware');
 
 // api/auth/register
 router.post('/register',authController.registerUser);

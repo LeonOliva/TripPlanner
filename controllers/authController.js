@@ -8,7 +8,7 @@ const refreshToken = require('../models/refreshToken');
 const generateTokens = (userId) => { //crea un token con l'ID di questo utente
     const accessToken = jwt.sign( //la funzione jwt che serve per creare effettivamente il token
         {userId: userId}, //payload che riceve la funzione, identifica l'utente 
-        process.env.ACCESS_TOKEN_SCECRET, //chiave segreta con cui è firmato il token (contenuta in un file .env)
+        process.env.ACCESS_TOKEN_SECRET, //chiave segreta con cui è firmato il token (contenuta in un file .env)
         {expiresIn: '15m'} //Access token a breve scadenza
     );
     const refreshToken = jwt.sign(
@@ -20,7 +20,7 @@ const generateTokens = (userId) => { //crea un token con l'ID di questo utente
 };
 
 //Registarazione Utente
-exports.registerUser = async (Req, res) => {
+exports.registerUser = async (req, res) => {
     try{
         const{username, email, password} = req.body;
 

@@ -8,11 +8,38 @@
         <h1>TripPlanner</h1>
         <p>Benvenuto in TripPlanner!<br>Qui potrai organizzare il tuo itineriario personalizzato per il tuo viaggio</p><br>
         <img src="/homepage.jpg" alt="immagine homepage" style="width: 100%; height:600px;">
+        <section id="profilo">
+            <h2>Profilo</h2>
+                <div id="auth-section">
+                <!-- Qui mostreremo form o info utente -->
+                    <a href="register.html"><button type="button" fontsize="24px;">Registrati</button></a>
+                    <a href="login.html"><button type="button" fontsize="24px;">Login</button></a>  
+                    <button id="LogoutBtn" type="button" fontsize="24px;">Logout</button>
+                    <script>
+                        document.getElementById("LogoutBtn").addEventListener("click", async()=>{
+                            try{
+                                  const response = await fetch("/api/auth/logout", { //fetch serve per fare richieste HTTP dal browser senza ricaricare la pagina
+                                  method:"POST",
+                                  credentials:"include" //invia i cookie insieme alla richiesta
+                                  });
+                                
+                                  const data = await response.json(); //prende la risposta e la converte in oggetto JavaScript
+                                  alert(data.message);
+
+                                  window.location.href="/"; //ritorno alla homepage
+                                }catch(err){
+                                    console.error("Errore logout: ",err);
+                                    alert("Errore durante il logout");
+                                }
+                        });
+                    </script>
+                </div>
+        </section>
         <div>
             <h2>Visita la pagina degli itinerari</h2>
             <p><a href="itinerari.html">itinerari
             </a></p>
         </div>
-    <a href="register.html"><button type="button" fontzize="24px;">Registrati</button></a>
+    <!--<a href="register.html"><button type="button" fontzize="24px;">Registrati</button></a>-->
     </body>
 </html>
