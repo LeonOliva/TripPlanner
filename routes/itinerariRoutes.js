@@ -1,30 +1,17 @@
-const express = require('express')
-const router = express.Router()
-const {itineari} = require('../models/itinerario')
+const express = require('express');
+const router = express.Router();
+const itinerariController = require('../controllers/itinerariController');
 
-router.get('/', (req, res) => { //visualizza tutti gli itinerari
-    res.status(200).json({success:true, data:itenerari})
-})
+//crea itinerario
+router.post("/crea",itinerariController.creaItinerario);
 
-router.get('/:id',(req,res)=>{ //per visualizzare un itenerario specifico
-})
+//visualizza tutti gli itinerario
+router.get("/visualizza", itinerariController.tuttiItinerari);
 
+//modifica itinerario
+router.post("/modifica", itinerariController.modificaItinerario);
 
-router.post('/', (req,res) => { //per inserire un nuovo itenerario
-    itinerari.push(itinerario)
-    res.status(200).json({success:true, data: itinerari})
-})
-
-router.put('/:id', (req,res) => { //modifica itinerario
-   
-})
-
-router.delete('/:id', (req,res) => { //cancella itinearario
-    const {id} = req.params
-    const index = itinerari.findIndex(itinerario => itinerario.id === id)
-    itinerari.splice(index,1)
-    res.status(200).json({success:true, data:itinerari})
-})
+//cancella itinerario
+router.post("/cancella", itinerariController.cancellaItinerario);
 
 module.exports=router;
-

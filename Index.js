@@ -41,9 +41,9 @@ app.get('/', (req,res)=>{
     res.sendFile('index.html',{root:__dirname});
 })
 
-app.get('/registrazione', (req,res)=>{
+/*app.get('/registrazione', (req,res)=>{
     res.sendFile('register.html',({root:__dirname}));
-})
+})*/
 
 app.listen(3000, (req,res)=>{
     console.log("server in ascolto sulla porta 3000");
