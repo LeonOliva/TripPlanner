@@ -51,8 +51,8 @@ exports.creaItinerario = async (req, res) => {
     }
 };
 
-// Ottieni tutti gli itinerari
-exports.tuttiItinerari = async (req, res) => {
+// Visualizza tutti gli itinerari
+exports.visualizzaItinerari = async (req, res) => {
     try {
         const itinerari = await Itinerario.find(); // CORRETTO: era "itinerari.find()"
         res.json({
@@ -64,6 +64,21 @@ exports.tuttiItinerari = async (req, res) => {
             success: false,
             error: "Errore nel recupero degli itinerari"
         });
+    }
+};
+
+// Visualizza un singolo itinearario
+exports.visualizzaItinerario = async (req, res) => {
+    try{
+        const id = req.params.id;
+        const itinerario = await Itinerario.findById(id);
+        if(!itinerario) return res.status(404).json({message:"Itinerario non trovato"});
+        res.json({
+            success: true, 
+            data: itinerario});
+    }catch (err){
+        console.error(err);
+        res.status(500).json({message:"Errore server"});
     }
 };
 
@@ -89,13 +104,48 @@ exports.modificaItinerario = async (req, res) => {
             data: aggiornato
         });
     } catch (err) {
-        console.error("Errore modifica:", err);
+        console.error("Errore aggiornamento:", err);
         res.status(500).json({
             success: false,
-            error: "Errore nella modifica dell'itinerario"
+            error: "Errore nell'aggiornamento dell'itinerario"
         });
     }
 };
+
+// Ricerca itinerari
+exports.ricercaItinerari = async (req, res) => {
+    try {
+        const { search, stato, travelMode } = req.query;
+        
+        let filtri = {};
+        
+        if (search && search.trim() !== '') {
+            const searchTerm = search.trim();
+            filtri.$or = [
+                { titolo: { $regex: searchTerm, $options: 'i' } },
+                { descrizione: { $regex: searchTerm, $options: 'i' } },
+                { luoghi: { $in: [new RegExp(searchTerm, 'i')] } }
+            ];
+        }
+        
+        if (stato) filtri.stato = stato;
+        if (travelMode) filtri.travelMode = travelMode;
+        
+        const itinerari = await Itinerario.find(filtri).sort({ createdAt: -1 });
+        
+        res.json({
+            success: true,
+            data: itinerari
+        });
+    } catch (error) {
+        console.error('Errore ricerca:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Errore nella ricerca'
+        });
+    }
+};
+
 
 // Cancella itinerario
 exports.cancellaItinerario = async (req, res) => {

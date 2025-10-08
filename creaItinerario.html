@@ -128,7 +128,7 @@
             <input type="text" id="titolo" maxlength="100" placeholder="Es: Weekend a Roma" required>
         </div>
         <div>
-            <textarea id="descrizione" name="descrizione" maxlength="500" placeholder="Descrivi il tuo itinerario..."></textarea> 
+            <br><textarea id="descrizione" name="descrizione" maxlength="500" placeholder="Descrivi il tuo itinerario..."  style="width:500px;height:100px;"></textarea> 
         </div>
         <div class="controls">
             <label for="travelMode">Modalità di viaggio</label>
@@ -179,307 +179,339 @@
     </div>
 
     <script>
-        let map, directionsService, directionsRenderer;
-        let marker, autocomplete;
-        let luoghiCount = 1;
+    let map, directionsService, directionsRenderer;
+    let marker, autocomplete;
+    let luoghiCount = 1;
+    let itinerarioIdInModifica = null; // Variabile globale per l'ID
 
-        function initMap(){
-            const startPosition = {lat: 41.9028, lng: 12.4964}; // Roma
+    function initMap(){
+        const startPosition = {lat: 41.9028, lng: 12.4964};
 
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: startPosition, 
-                zoom: 6,
-            });
-            
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer();
-            directionsRenderer.setMap(map);
-            
-            // Marcatori
-            marker = new google.maps.Marker({
-                map: map,
-                position: startPosition
-            });
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: startPosition, 
+            zoom: 6,
+        });
+        
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setMap(map);
+        
+        marker = new google.maps.Marker({
+            map: map,
+            position: startPosition
+        });
 
-            // Autocomplete per la search box
-            const input = document.getElementById("search-box");
-            autocomplete = new google.maps.places.Autocomplete(input);
-            autocomplete.bindTo("bounds", map);
+        const input = document.getElementById("search-box");
+        autocomplete = new google.maps.places.Autocomplete(input);
+        autocomplete.bindTo("bounds", map);
+        
+        autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) {
+                alert("Nessun dettaglio disponibile per: " + place.name);
+                return;
+            }
             
-            // Evento: quando l'utente sceglie un luogo
-            autocomplete.addListener("place_changed", () => {
-                const place = autocomplete.getPlace();
-                if (!place.geometry || !place.geometry.location) {
-                    alert("Nessun dettaglio disponibile per: " + place.name);
-                    return;
-                }
-                
-                if (place.geometry.viewport) {
-                    map.fitBounds(place.geometry.viewport);
-                } else {
-                    map.setCenter(place.geometry.location);
-                    map.setZoom(15);
-                }
+            if (place.geometry.viewport) {
+                map.fitBounds(place.geometry.viewport);
+            } else {
+                map.setCenter(place.geometry.location);
+                map.setZoom(15);
+            }
 
-                marker.setPosition(place.geometry.location);
-            });
-            
-            inizializzaAutocompleteLuoghi();
+            marker.setPosition(place.geometry.location);
+        });
+        
+        inizializzaAutocompleteLuoghi();
+    }
+
+    // Carica dati se in modalità modifica
+    window.addEventListener("DOMContentLoaded", async () => {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("id");
+
+        if (!id) {
+            console.log("Modalità: Crea nuovo itinerario");
+            return;
         }
 
-        // FUNZIONE CORRETTA: Crea Itinerario
-        function creaItinerario() {
-            console.log("🎯 Inizio creazione itinerario...");
+        console.log("✏️ Modalità modifica per ID:", id);
+        itinerarioIdInModifica = id;
+
+        try {
+            const res = await fetch(`/api/itinerari/visualizza/${id}`);
+            if (!res.ok) throw new Error("Errore nel caricamento");
             
-            const luoghiInputs = document.querySelectorAll('.luogo-input');
-            const luoghi = Array.from(luoghiInputs)
-                .map(input => input.value.trim())
-                .filter(value => value !== '');
+            const data = await res.json();
+            const itinerario = data.data || data;
 
-            console.log("📍 Luoghi trovati:", luoghi);
+            // Popola i campi
+            document.getElementById("titolo").value = itinerario.titolo || "";
+            document.getElementById("descrizione").value = itinerario.descrizione || "";
+            document.getElementById("travelMode").value = itinerario.travelMode || "DRIVING";
+            document.getElementById("stato").value = itinerario.stato || "bozza";
 
-            if (luoghi.length === 0) {
-                alert("Inserisci almeno un luogo per creare l'itinerario");
-                return;
+            // Carica i luoghi
+            const container = document.getElementById("luoghiContainer");
+            container.innerHTML = "";
+            
+            itinerario.luoghi.forEach((luogo, index) => {
+                const div = document.createElement("div");
+                div.className = "luogo-item";
+                const placeholder = index === 0 ? 'Punto di partenza' : 
+                                   index === itinerario.luoghi.length - 1 ? 'Destinazione finale' : 
+                                   `Tappa ${index}`;
+                div.innerHTML = `
+                    <input type="text" class="luogo-input" placeholder="${placeholder}" 
+                           data-index="${index}" value="${luogo}">
+                    <button type="button" class="btn btn-danger" onclick="rimuoviLuogo(${index})" 
+                            style="display: ${itinerario.luoghi.length > 1 ? 'block' : 'none'};">Rimuovi</button>
+                `;
+                container.appendChild(div);
+            });
+
+            luoghiCount = itinerario.luoghi.length;
+            inizializzaAutocompleteLuoghi();
+            aggiornaVisibilitaPulsantiRimozione();
+
+            // Cambia titolo e pulsante
+            document.querySelector('h1').textContent = 'Modifica Itinerario';
+            const btnSalva = document.querySelector('.btn-success');
+            if (btnSalva) {
+                btnSalva.textContent = '💾 Aggiorna Itinerario';
             }
 
-            // Se c'è un solo luogo, centra la mappa su di esso
-            if (luoghi.length === 1) {
-                const geocoder = new google.maps.Geocoder();
-                geocoder.geocode({ address: luoghi[0] }, (results, status) => {
-                    if (status === 'OK') {
-                        map.setCenter(results[0].geometry.location);
-                        map.setZoom(15);
-                        marker.setPosition(results[0].geometry.location);
-                        alert(`Luogo trovato: ${luoghi[0]}`);
-                    } else {
-                        alert(`Impossibile trovare il luogo: ${luoghi[0]}`);
-                    }
-                });
-                return;
+            // Carica percorso sulla mappa
+            if (itinerario.luoghi && itinerario.luoghi.length >= 2) {
+                setTimeout(() => creaItinerario(), 1000);
             }
 
-            // Se ci sono più luoghi, calcola il percorso
-            const travelMode = document.getElementById('travelMode').value;
-            console.log("🚗 Modalità di viaggio:", travelMode);
+        } catch (error) {
+            console.error("Errore caricamento:", error);
+            alert("Impossibile caricare l'itinerario per la modifica.");
+        }
+    });
 
-            // Corretto: waypoints sono i luoghi intermedi (esclusi primo e ultimo)
-            const waypoints = luoghi.slice(1, -1).map(luogo => ({
-                location: luogo,
-                stopover: true  // CORRETTO: era "stopovere"
-            }));
+    function creaItinerario() {
+        console.log("🎯 Inizio creazione itinerario...");
+        
+        const luoghiInputs = document.querySelectorAll('.luogo-input');
+        const luoghi = Array.from(luoghiInputs)
+            .map(input => input.value.trim())
+            .filter(value => value !== '');
 
-            console.log("🛤️ Waypoints:", waypoints);
+        if (luoghi.length === 0) {
+            alert("Inserisci almeno un luogo per creare l'itinerario");
+            return;
+        }
 
-            const request = {
-                origin: luoghi[0],
-                destination: luoghi[luoghi.length - 1],
-                waypoints: waypoints,
-                travelMode: google.maps.TravelMode[travelMode]  // CORRETTO: era "travelMode"
-            };
+        if (luoghi.length === 1) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: luoghi[0] }, (results, status) => {
+                if (status === 'OK') {
+                    map.setCenter(results[0].geometry.location);
+                    map.setZoom(15);
+                    marker.setPosition(results[0].geometry.location);
+                    alert(`Luogo trovato: ${luoghi[0]}`);
+                } else {
+                    alert(`Impossibile trovare il luogo: ${luoghi[0]}`);
+                }
+            });
+            return;
+        }
 
-            console.log("📮 Request Google Maps:", request);
+        const travelMode = document.getElementById('travelMode').value;
+        const waypoints = luoghi.slice(1, -1).map(luogo => ({
+            location: luogo,
+            stopover: true
+        }));
 
-            directionsService.route(request, (result, status) => {
-                console.log("📡 Risposta Google Maps:", status);
-                
-                if (status === "OK") {
-                    directionsRenderer.setDirections(result);
-                    console.log("✅ Itinerario creato:", result);
+        const request = {
+            origin: luoghi[0],
+            destination: luoghi[luoghi.length - 1],
+            waypoints: waypoints,
+            travelMode: google.maps.TravelMode[travelMode]
+        };
 
-                    // CORRETTO: era "result.route[0]" invece di "result.routes[0]"
-                    const route = result.routes[0];
-                    const totalDistance = route.legs.reduce((total, leg) => total + leg.distance.value, 0);
-                    const totalDuration = route.legs.reduce((total, leg) => total + leg.duration.value, 0);
+        directionsService.route(request, (result, status) => {
+            if (status === "OK") {
+                directionsRenderer.setDirections(result);
+                const route = result.routes[0];
+                const totalDistance = route.legs.reduce((total, leg) => total + leg.distance.value, 0);
+                const totalDuration = route.legs.reduce((total, leg) => total + leg.duration.value, 0);
 
-                    alert(`Itinerario creato con successo!
+                alert(`Itinerario creato con successo!
 Distanza totale: ${(totalDistance / 1000).toFixed(1)} km
 Tempo stimato: ${Math.round(totalDuration / 60)} minuti
 Tappe: ${luoghi.length}`);
-                } else {
-                    console.error("❌ Errore Google Maps:", status);
-                    alert("Errore nella creazione dell'itinerario: " + status);
-                }
+            } else {
+                alert("Errore nella creazione dell'itinerario: " + status);
+            }
+        });
+    }
+
+    async function salvaItinerario() {
+        const titolo = document.getElementById('titolo').value.trim();
+        const descrizione = document.getElementById('descrizione').value.trim();
+        const travelMode = document.getElementById('travelMode').value;
+        const stato = document.getElementById('stato').value;
+
+        const luoghiInputs = document.querySelectorAll('.luogo-input');
+        const luoghi = Array.from(luoghiInputs)
+            .map(input => input.value.trim())
+            .filter(value => value !== '');
+
+        if (!titolo) {
+            alert('⚠️ Il titolo è obbligatorio');
+            document.getElementById('titolo').focus();
+            return;
+        }
+
+        if (luoghi.length === 0) {
+            alert('⚠️ Inserisci almeno un luogo');
+            return;
+        }
+
+        const itinerarioData = {
+            titolo,
+            descrizione,
+            luoghi,
+            travelMode,
+            stato
+        };
+
+        try {
+            let url, method, successMsg;
+            
+            if (itinerarioIdInModifica) {
+                // MODIFICA
+                url = `/api/itinerari/modifica/${itinerarioIdInModifica}`;
+                method = "PUT";
+                successMsg = "Itinerario aggiornato con successo!";
+            } else {
+                // CREAZIONE
+                url = "/api/itinerari/crea";
+                method = "POST";
+                successMsg = "Itinerario creato con successo!";
+            }
+
+            const response = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(itinerarioData)
             });
-        }
 
-        // Funzione per salvare l'itinerario
-        async function salvaItinerario() {
-            const titolo = document.getElementById('titolo').value.trim();
-            const descrizione = document.getElementById('descrizione').value.trim();
-            const travelMode = document.getElementById('travelMode').value;
-            const stato = document.getElementById('stato').value;
-
-            const luoghiInputs = document.querySelectorAll('.luogo-input');
-            const luoghi = Array.from(luoghiInputs)
-                .map(input => input.value.trim())
-                .filter(value => value !== '');
-
-            // Validazione più robusta
-            if (!titolo) {
-                alert('Il titolo è obbligatorio');
-                document.getElementById('titolo').focus();
-                return;
-            }
-
-            if (luoghi.length === 0) {
-                alert('Inserisci almeno un luogo per l\'itinerario');
-                return;
-            }
-
-            const itinerarioData = {
-                titolo: titolo,
-                descrizione: descrizione,
-                luoghi: luoghi,
-                travelMode: travelMode,
-                stato: stato
-            };
-
-            console.log('Dati da inviare al backend:', itinerarioData);
-            
-            try {
-                // Chiamata API al controller
-                const response = await fetch("/api/itinerari/crea", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(itinerarioData)
-                });
-
-                console.log('Status response:', response.status);
-
-                if (response.ok) {
-                    // Successo (status 201)
-                    const result = await response.json();
-                    console.log('Response data:', result);
-
-                    alert(`Itinerario "${result.data.titolo}" salvato con successo!
-ID: ${result.data._id}
-Luoghi: ${result.data.luoghi.length}
-Modalità: ${result.data.travelMode}
-Stato: ${result.data.stato}`);
-                    
-                    // Opzionalmente resetta il form
-                    if (confirm('Vuoi creare un nuovo itinerario?')) {
-                        resetForm();
-                    }
-                } else {
-                    // Gestione errori HTTP (400, 500, etc.)
-                    let errorMessage = `Errore HTTP ${response.status}`;
-                    
-                    try {
-                        const errorResult = await response.json();
-                        console.error('Errore dal server:', errorResult);
-                        
-                        if (errorResult.message) {
-                            errorMessage = errorResult.message;
-                        }
-                        
-                        // Mostra errori di validazione se presenti
-                        if (errorResult.errors && Array.isArray(errorResult.errors)) {
-                            errorMessage += '\n\nDettagli:\n' + errorResult.errors.join('\n');
-                        }
-                    } catch (jsonError) {
-                        console.error('Errore nel parsing JSON della risposta di errore:', jsonError);
-                        errorMessage += ': Impossibile leggere dettagli errore';
-                    }
-                    
-                    alert('Errore nel salvataggio:\n' + errorMessage);
-                }
-            } catch (networkError) {
-                // Errori di rete, timeout, problemi di connessione
-                console.error('Errore di rete:', networkError);
-                alert('Errore di connessione al server.\nControlla la connessione internet e riprova.');
-            }
-        }
-
-        function resetForm() {
-            if (confirm('Sei sicuro di voler resettare tutto il form?')) {
-                document.getElementById('titolo').value = '';
-                document.getElementById('descrizione').value = '';
-                document.getElementById('travelMode').value = 'DRIVING';
-                document.getElementById('stato').value = 'bozza';
-                document.getElementById('search-box').value = '';
-
-                const container = document.getElementById('luoghiContainer');
-                container.innerHTML = `
-                    <div class="luogo-item">
-                        <input type="text" class="luogo-input" placeholder="Punto di partenza" data-index="0">
-                        <button type="button" class="btn btn-danger" onclick="rimuoviLuogo(0)" style="display:none;">Rimuovi</button>
-                    </div>
-                `;
+            if (response.ok) {
+                const result = await response.json();
+                alert(`✅ ${successMsg}\n\nTitolo: ${result.data.titolo}\nLuoghi: ${result.data.luoghi.length}`);
                 
-                luoghiCount = 1;
-
-                directionsRenderer.setDirections({routes:[]});
-                marker.setPosition({lat: 41.9028, lng: 12.4964});
-                map.setCenter({lat: 41.9028, lng: 12.4964});  // CORRETTO: era "at" invece di "lat"
-                map.setZoom(6);
-
-                inizializzaAutocompleteLuoghi();
+                if (confirm('Vuoi visualizzare tutti gli itinerari?')) {
+                    window.location.href = "VisualizzaItinerari.html";
+                } else {
+                    window.location.href = "CreaItinerario.html";
+                }
+            } else {
+                const errorResult = await response.json();
+                alert(`❌ Errore: ${errorResult.message || errorResult.error}`);
             }
+        } catch (error) {
+            console.error("Errore:", error);
+            alert("❌ Errore di connessione al server.");
         }
-    
-        function aggiungiLuogo() {
-            const container = document.getElementById('luoghiContainer');
-            const nuovoLuogo = document.createElement('div');
-            nuovoLuogo.className = 'luogo-item';
-            
-            const placeholder = luoghiCount === 1 ? 'Destinazione finale' : `Tappa ${luoghiCount}`;
+    }
 
-            nuovoLuogo.innerHTML = `
-                <input type="text" class="luogo-input" placeholder="${placeholder}" data-index="${luoghiCount}">
-                <button type="button" class="btn btn-danger" onclick="rimuoviLuogo(${luoghiCount})">Rimuovi</button>
+    function resetForm() {
+        if (confirm('Sei sicuro di voler resettare tutto il form?')) {
+            document.getElementById('titolo').value = '';
+            document.getElementById('descrizione').value = '';
+            document.getElementById('travelMode').value = 'DRIVING';
+            document.getElementById('stato').value = 'bozza';
+            document.getElementById('search-box').value = '';
+
+            const container = document.getElementById('luoghiContainer');
+            container.innerHTML = `
+                <div class="luogo-item">
+                    <input type="text" class="luogo-input" placeholder="Punto di partenza" data-index="0">
+                    <button type="button" class="btn btn-danger" onclick="rimuoviLuogo(0)" style="display:none;">Rimuovi</button>
+                </div>
             `;
             
-            container.appendChild(nuovoLuogo);
-            luoghiCount++;
-
+            luoghiCount = 1;
+            directionsRenderer.setDirections({routes:[]});
+            marker.setPosition({lat: 41.9028, lng: 12.4964});
+            map.setCenter({lat: 41.9028, lng: 12.4964});
+            map.setZoom(6);
             inizializzaAutocompleteLuoghi();
-            aggiornaVisibilitaPulsantiRimozione();
         }
+    }
 
-        function rimuoviLuogo(index) {
-            const container = document.getElementById('luoghiContainer');
-            const luogoItems = container.querySelectorAll('.luogo-item');
+    function aggiungiLuogo() {
+        const container = document.getElementById('luoghiContainer');
+        const nuovoLuogo = document.createElement('div');
+        nuovoLuogo.className = 'luogo-item';
+        
+        const placeholder = luoghiCount === 1 ? 'Destinazione finale' : `Tappa ${luoghiCount}`;
 
-            luogoItems.forEach(item => {
-                const input = item.querySelector('.luogo-input');
-                if (input && input.dataset.index == index) {
-                    item.remove();
-                }
-            });
-            
-            aggiornaVisibilitaPulsantiRimozione();
-        }
+        nuovoLuogo.innerHTML = `
+            <input type="text" class="luogo-input" placeholder="${placeholder}" data-index="${luoghiCount}">
+            <button type="button" class="btn btn-danger" onclick="rimuoviLuogo(${luoghiCount})">Rimuovi</button>
+        `;
+        
+        container.appendChild(nuovoLuogo);
+        luoghiCount++;
+        inizializzaAutocompleteLuoghi();
+        aggiornaVisibilitaPulsantiRimozione();
+    }
 
-        function inizializzaAutocompleteLuoghi() {
-            const luoghiInputs = document.querySelectorAll('.luogo-input');
-            luoghiInputs.forEach(input => {
-                if (!input.hasAttribute('data-autocomplete')) {
-                    const autocomp = new google.maps.places.Autocomplete(input);
-                    autocomp.bindTo("bounds", map);
-                    input.setAttribute('data-autocomplete', 'true');
-                }
-            });
-        }
+    function rimuoviLuogo(index) {
+        const container = document.getElementById('luoghiContainer');
+        const luogoItems = container.querySelectorAll('.luogo-item');
 
-        function aggiornaVisibilitaPulsantiRimozione() {
-            const container = document.getElementById('luoghiContainer');
-            const luogoItems = container.querySelectorAll('.luogo-item');
+        luogoItems.forEach(item => {
+            const input = item.querySelector('.luogo-input');
+            if (input && input.dataset.index == index) {
+                item.remove();
+            }
+        });
+        
+        aggiornaVisibilitaPulsantiRimozione();
+    }
 
-            luogoItems.forEach((item) => {
-                const button = item.querySelector('.btn-danger');
-                if (button) {
-                    button.style.display = luogoItems.length > 1 ? 'block' : 'none';
-                }
-            });
-        }
-    </script>
-    
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=API_KEY&libraries=places&callback=initMap">
-    </script>
+    function inizializzaAutocompleteLuoghi() {
+        const luoghiInputs = document.querySelectorAll('.luogo-input');
+        luoghiInputs.forEach(input => {
+            if (!input.hasAttribute('data-autocomplete')) {
+                const autocomp = new google.maps.places.Autocomplete(input);
+                autocomp.bindTo("bounds", map);
+                input.setAttribute('data-autocomplete', 'true');
+            }
+        });
+    }
+
+    function aggiornaVisibilitaPulsantiRimozione() {
+        const container = document.getElementById('luoghiContainer');
+        const luogoItems = container.querySelectorAll('.luogo-item');
+
+        luogoItems.forEach((item) => {
+            const button = item.querySelector('.btn-danger');
+            if (button) {
+                button.style.display = luogoItems.length > 1 ? 'block' : 'none';
+            }
+        });
+    }
+</script>
+
+<script>
+fetch('/api/key')
+ .then(res => res.json())
+ .then(data => {
+    const googleMapsApiKey = data.key;
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&callback=initMap`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+ });
+</script>
 </body>
 </html>

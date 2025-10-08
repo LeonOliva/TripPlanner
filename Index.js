@@ -21,6 +21,7 @@ const app = express(); //creazione dell'app con il framework express
 
 const itinerariRouter = require('./routes/itinerariRoutes');
 const authRouter = require('./routes/authRoutes');
+const keyRouter = require('./routes/keyRoutes');
 //const { use } = require('react');
 
 
@@ -35,9 +36,10 @@ app.use(express.static(path.join(__dirname))); //serve per dire al server Node q
 //Routes API
 app.use('/api/itinerari', itinerariRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/',keyRouter);
 
 //Route per l'homepage
-app.get('/', (req,res)=>{
+app.get('/', (req, res)=>{
     res.sendFile('index.html',{root:__dirname});
 })
 

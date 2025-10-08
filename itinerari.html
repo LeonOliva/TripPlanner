@@ -15,27 +15,7 @@
             <br>Per salvare l'itenerario dovrai essere loggato</p><br>
             <div id="auth-section">
                     <a href="creaItinerario.html"><button type="button" fontsize="24px;">Crea</button></a>
-                    <a href="Modifica.html"><button type="button" fontsize="24px;">Modifica</button></a>    
-                    <a href="Visualizza.html"><button type="button" fontsize="24px;">Visualizza</button></a>
-                    <a href="Cancella.html"><button type="button" fontsize="24px;">Cancella</button></a>  
-                    <script>
-                        document.getElementById("LogoutBtn").addEventListener("click", async()=>{
-                            try{
-                                  const response = await fetch("/api/auth/logout", { //fetch serve per fare richieste HTTP dal browser senza ricaricare la pagina
-                                  method:"POST",
-                                  credentials:"include" //invia i cookie insieme alla richiesta
-                                  });
-                                
-                                  const data = await response.json(); //prende la risposta e la converte in oggetto JavaScript
-                                  alert(data.message);
-
-                                  window.location.href="/"; //ritorno alla homepage
-                                }catch(err){
-                                    console.error("Errore logout: ",err);
-                                    alert("Errore durante il logout");
-                                }
-                        });
-                    </script>
+                    <a href="visualizzaItinerari.html"><button type="button" fontsize="24px;">Visualizza</button></a>  
             </div>    
     </body>
 </html>
