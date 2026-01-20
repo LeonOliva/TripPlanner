@@ -59,3 +59,5 @@ mongoose.connect(process.env.MONGO_URI,{//process.env a "scartare" il file mongo
 })
 .then(() => console.log("Connesso a MongoDB atlas"))
 .catch(err => console.error("Errore:",err));
+
+console.log("URI Mongo:", process.env.MONGO_URI);
