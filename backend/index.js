@@ -35,13 +35,20 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 // --- CONNESSIONE DATABASE ---
-mongoose.connect(process.env.MONGO_URI)
+const connectionString = process.env.MONGO_URI;
+
+// Opzione A: Se vuoi debuggare, stampa cosa legge Render (cancellalo dopo!)
+console.log("Tentativo connessione con URI:", connectionString.replace(/:([^:@]{1,})@/, ':****@')); 
+
+mongoose.connect(connectionString)
   .then(() => {
-      console.log('MongoDB Connesso...');
-      // Avvia i Cron Jobs solo se il DB è connesso
+      console.log('MongoDB Connesso... 🟢');
       startCronJobs(); 
   })
-  .catch(err => console.error("Errore connessione MongoDB:", err));
+  .catch(err => {
+      console.error("❌ ERRORE CRITICO MONGO:", err.message);
+      // Questo ti dirà se l'errore è davvero Auth o Network
+  });
 
 // --- ROTTE API ---
 app.use('/api/auth', authRoutes);
