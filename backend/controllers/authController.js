@@ -41,6 +41,10 @@ const generateTokens = (user) => {
 exports.registerUser = async (req, res) => {
     try {
         console.log("1. Inizio registrazione...");
+        
+        // --- AGGIUNGI QUI ---
+        const frontendUrl = process.env.FRONTEND_URL || "https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app";
+        
         const { username, email, password } = req.body;
 
         // Verifica esistenza
@@ -63,9 +67,26 @@ exports.registerUser = async (req, res) => {
         });
         await newUser.save();
         console.log("✅ Utente salvato nel DB!");
-
         console.log("4. Tentativo invio email a:", email);
-        const verifyUrl = `http://localhost:5173/verify-email/${verifyToken}`;
+        const verifyUrl = `${frontendUrl}/verify-email/${verifyToken}`;
+
+        // --- AGGIUNGI QUESTO BLOCCO PER INVIARE L'EMAIL ---
+        await transporter.sendMail({
+            from: '"TripPlanner" <poulgigi839@gmail.com>',
+            to: email,
+            subject: "Verifica il tuo account TripPlanner",
+            html: `
+                <h1>Benvenuto su TripPlanner!</h1>
+                <p>Clicca sul link qui sotto per verificare la tua email e attivare il tuo profilo:</p>
+                <a href="${verifyUrl}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Verifica Email</a>
+                <p>Se il bottone non funziona, copia e incolla questo link: ${verifyUrl}</p>
+            `
+        });
+
+        res.status(201).json({ 
+            success: true, 
+            message: "Registrazione completata! Controlla la tua email per verificare l'account." 
+        });
 
     } catch (error) {
         console.error("❌ ERRORE GRAVE NEL BACKEND:", error);
