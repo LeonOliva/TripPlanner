@@ -22,8 +22,13 @@ initSocket(httpServer);
 
 // --- MIDDLEWARE ---
 app.use(cors({
-    origin: 'http://localhost:5173', // URL del Frontend
-    credentials: true // Permette cookie/sessioni
+    // Autorizza sia il tuo frontend su Vercel che localhost per i test
+    origin: [
+        'https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app', 
+        'http://localhost:5173'
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true // Fondamentale per i cookie e il Refresh Token
 }));
 app.use(express.json()); 
 app.use(cookieParser()); 
@@ -41,11 +46,6 @@ mongoose.connect(process.env.MONGO_URI)
 // --- ROTTE API ---
 app.use('/api/auth', authRoutes);
 app.use('/api/itinerari', itinerariRoutes);
-app.use(cors({
-  origin: "*", // Per ora metti "*" (tutti), poi metteremo l'URL di Vercel per sicurezza
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
 
 // --- AVVIO SERVER ---
 const PORT = process.env.PORT || 5000;
