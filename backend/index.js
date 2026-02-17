@@ -34,21 +34,20 @@ app.use(express.json());
 app.use(cookieParser()); 
 app.use(passport.initialize());
 
-// --- CONNESSIONE DATABASE ---
-const connectionString = process.env.MONGO_URI;
+
+
+const connectionString = "mongodb+srv://pierluigi_admin:PasswordFacile2026@cluster0.yeeopd4.mongodb.net/TripPlanner?retryWrites=true&w=majority";
 
 // Opzione A: Se vuoi debuggare, stampa cosa legge Render (cancellalo dopo!)
 console.log("Tentativo connessione con URI:", connectionString.replace(/:([^:@]{1,})@/, ':****@')); 
+console.log("Tentativo connessione DIRETTA..."); // Togliamo il replace per essere sicuri
 
 mongoose.connect(connectionString)
   .then(() => {
       console.log('MongoDB Connesso... 🟢');
       startCronJobs(); 
   })
-  .catch(err => {
-      console.error("❌ ERRORE CRITICO MONGO:", err.message);
-      // Questo ti dirà se l'errore è davvero Auth o Network
-  });
+  .catch(err => console.error("❌ ERRORE CRITICO MONGO:", err.message));
 
 // --- ROTTE API ---
 app.use('/api/auth', authRoutes);
