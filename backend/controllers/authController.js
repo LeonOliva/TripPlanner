@@ -208,12 +208,15 @@ exports.googleCallback = async (req, res) => {
             sameSite: 'Strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
-
-        res.redirect(`http://localhost:5173/dashboard?accessToken=${accessToken}`);
+        const frontendUrl = process.env.FRONTEND_URL || "https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app";
+        
+        res.redirect(`${frontendUrl}/dashboard?accessToken=${accessToken}`);
 
     } catch (error) {
         console.error("Errore Google Callback:", error);
-        res.redirect('http://localhost:5173/login?error=google_auth_failed');
+        
+        const frontendUrl = process.env.FRONTEND_URL || "https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app";
+        res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
     }
 };
 
