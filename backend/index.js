@@ -34,20 +34,11 @@ app.use(express.json());
 app.use(cookieParser()); 
 app.use(passport.initialize());
 
-
-
-const connectionString = "mongodb+srv://pierluigi_admin:PasswordFacile2026@cluster0.yeeopd4.mongodb.net/TripPlanner?retryWrites=true&w=majority";
-
-// Opzione A: Se vuoi debuggare, stampa cosa legge Render (cancellalo dopo!)
-console.log("Tentativo connessione con URI:", connectionString.replace(/:([^:@]{1,})@/, ':****@')); 
-console.log("Tentativo connessione DIRETTA..."); // Togliamo il replace per essere sicuri
-
-mongoose.connect(connectionString)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
       console.log('MongoDB Connesso... 🟢');
       startCronJobs(); 
   })
-  .catch(err => console.error("❌ ERRORE CRITICO MONGO:", err.message));
 
 // --- ROTTE API ---
 app.use('/api/auth', authRoutes);
