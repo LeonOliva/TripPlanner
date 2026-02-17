@@ -24,7 +24,7 @@ initSocket(httpServer);
 app.use(cors({
     // Autorizza sia il tuo frontend su Vercel che localhost per i test
     origin: [
-        'https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app', 
+        'https://tplanner-gold.vercel.app', 
         'http://localhost:5173'
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
