@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import VerifyMessage from '../components/VerifyMessage';
 
+// CORRETTO
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const VerifyEmail = () => {
     const { token } = useParams();
     const navigate = useNavigate();
@@ -13,10 +16,8 @@ const VerifyEmail = () => {
     useEffect(() => {
         const verifyAccount = async () => {
             try {
-                // Simuliamo un ritardo minimo per far vedere l'animazione (opzionale)
-                // await new Promise(resolve => setTimeout(resolve, 1000));
-
-                const res = await fetch('http://localhost:5000/api/auth/verify-email', {
+                // CORRETTO: `${API_URL}/...` senza http e con backticks
+                const res = await fetch(`${API_URL}/api/auth/verify-email`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
@@ -47,11 +48,7 @@ const VerifyEmail = () => {
     }, [token, navigate]);
 
     return (
-        <VerifyMessage 
-            status={status} 
-            isSuccess={isSuccess} 
-            isError={isError} 
-        />
+        <VerifyMessage status={status} isSuccess={isSuccess} isError={isError} />
     );
 };
 

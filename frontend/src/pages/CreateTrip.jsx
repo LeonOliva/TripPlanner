@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import TripForm from '../components/TripForm';
 import TripPreview from '../components/TripPreview';
 
+// --- DEFINIZIONE URL BACKEND ---
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const CreateTrip = () => {
   const [currentParticipants, setCurrentParticipants] = useState([]);
   const navigate = useNavigate();
@@ -12,15 +15,8 @@ const CreateTrip = () => {
   const todayDate = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    origin: '',
-    destination: '',
-    stops: [],
-    startDate: '',
-    endDate: '',
-    travelType: 'flight',
-    participants: 1,
-    visibility: 'pubblica',
-    sharedWith: []
+    origin: '', destination: '', stops: [], startDate: '', endDate: '',
+    travelType: 'flight', participants: 1, visibility: 'pubblica', sharedWith: []
   });
 
   const [stopInput, setStopInput] = useState('');
@@ -39,9 +35,7 @@ const CreateTrip = () => {
     if (stopInput.trim() && formData.stops.length < 3) {
         setFormData(prev => ({ ...prev, stops: [...prev.stops, stopInput.trim()] }));
         setStopInput('');
-    } else if (formData.stops.length >= 3) {
-        alert("Puoi aggiungere al massimo 3 tappe intermedie.");
-    }
+    } else if (formData.stops.length >= 3) { alert("Max 3 tappe."); }
   };
 
   const removeStop = (index) => {
@@ -59,7 +53,6 @@ const CreateTrip = () => {
     setFormData(prev => ({ ...prev, sharedWith: prev.sharedWith.filter(f => f !== friend) }));
   };
 
-  // --- LOGICA MAPPA ---
   const getCoordinates = useCallback(async (city) => {
     if (!city) return null;
     try {
@@ -76,13 +69,11 @@ const CreateTrip = () => {
         setDuration("Volo (stimato)");
         return;
     }
-
     try {
       const coordinatesString = points.map(p => `${p[1]},${p[0]}`).join(';');
       const url = `https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson`;
       const response = await fetch(url);
       const data = await response.json();
-
       if (data.routes && data.routes.length > 0) {
         const coordinates = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
         setRoutePath(coordinates);
@@ -99,15 +90,11 @@ const CreateTrip = () => {
   const updateMap = useCallback(async () => {
     const allCities = [formData.origin, ...formData.stops, formData.destination].filter(c => c !== '');
     if (allCities.length < 2) return;
-
     const coordsPromises = allCities.map(city => getCoordinates(city));
     const coordsResults = await Promise.all(coordsPromises);
     const validCoords = coordsResults.filter(c => c !== null);
     setMapPoints(validCoords);
-
-    if (validCoords.length >= 2) {
-        getRoute(validCoords, formData.travelType);
-    }
+    if (validCoords.length >= 2) { getRoute(validCoords, formData.travelType); }
   }, [formData.origin, formData.stops, formData.destination, formData.travelType, getCoordinates, getRoute]);
 
   useEffect(() => {
@@ -122,24 +109,19 @@ const CreateTrip = () => {
       const fetchTripDetails = async () => {
         try {
           const token = localStorage.getItem('accessToken');
-          const response = await fetch(`http://localhost:5000/api/itinerari/visualizza/${id}`, {
+          // --- CORREZIONE QUI ---
+          const response = await fetch(`${API_URL}/api/itinerari/visualizza/${id}`, {
              headers: { 'Authorization': `Bearer ${token}` }
           });
           const data = await response.json();
-
           if (data.success) {
             const trip = data.data;
             setFormData({
-              origin: trip.origine,
-              destination: trip.destinazione,
-              stops: trip.tappe || [],
-              startDate: trip.dataInizio.split('T')[0],
-              endDate: trip.dataFine.split('T')[0],
+              origin: trip.origine, destination: trip.destinazione, stops: trip.tappe || [],
+              startDate: trip.dataInizio.split('T')[0], endDate: trip.dataFine.split('T')[0],
               travelType: trip.travelMode ? trip.travelMode.toLowerCase() : 'flight',
               participants: trip.partecipantiMax || trip.partecipanti || 2,
-              image: trip.immagine,
-              visibility: trip.visibilita,
-              sharedWith: trip.condivisoCon || []
+              image: trip.immagine, visibility: trip.visibilita, sharedWith: trip.condivisoCon || []
             });
             setCurrentParticipants(trip.partecipantiAttuali || []);
           }
@@ -152,21 +134,15 @@ const CreateTrip = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (new Date(formData.endDate) < new Date(formData.startDate)) {
-        setError("La data di fine non può essere precedente all'inizio!");
-        return;
-    }
-    if (!formData.origin || !formData.destination || !formData.startDate || !formData.endDate) {
-      setError("Compila tutti i campi obbligatori.");
-      return;
-    }
+    if (new Date(formData.endDate) < new Date(formData.startDate)) { setError("Data fine errata!"); return; }
+    if (!formData.origin || !formData.destination || !formData.startDate || !formData.endDate) { setError("Compila tutto."); return; }
 
     try {
       const token = localStorage.getItem('accessToken');
+      // --- CORREZIONE QUI ---
       const url = isEditMode 
-        ? `http://localhost:5000/api/itinerari/modifica/${id}` 
-        : 'http://localhost:5000/api/itinerari/crea';
+        ? `${API_URL}/api/itinerari/modifica/${id}` 
+        : `${API_URL}/api/itinerari/crea`;
       const method = isEditMode ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -176,10 +152,7 @@ const CreateTrip = () => {
       });
 
       if (response.status === 401 || response.status === 403) {
-          alert("Sessione scaduta.");
-          localStorage.removeItem('accessToken');
-          navigate('/login');
-          return;
+          alert("Sessione scaduta."); localStorage.removeItem('accessToken'); navigate('/login'); return;
       }
 
       const data = await response.json();
@@ -194,7 +167,8 @@ const CreateTrip = () => {
     if(!window.confirm("Rimuovere questo utente?")) return;
     try {
         const token = localStorage.getItem('accessToken');
-        const res = await fetch('http://localhost:5000/api/itinerari/rimuovi-partecipante', {
+        // --- CORREZIONE QUI ---
+        const res = await fetch(`${API_URL}/api/itinerari/rimuovi-partecipante`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ viaggioId: id, utenteDaRimuovereId: userIdToRemove })
@@ -213,37 +187,14 @@ const CreateTrip = () => {
         <h1>{isEditMode ? 'Modifica Viaggio ✏️' : 'Crea Nuovo Viaggio 🌍'}</h1>        
         <p>Organizza, aggiungi tappe e invita amici.</p>
       </div>
-
       <div className="create-trip-layout">
-        
-        {/* COMPONENTE FORM (SINISTRA) */}
         <TripForm 
-            formData={formData} 
-            handleChange={handleChange} 
-            handleSubmit={handleSubmit} 
-            isEditMode={isEditMode}
-            stopInput={stopInput} 
-            setStopInput={setStopInput} 
-            addStop={addStop} 
-            removeStop={removeStop}
-            inviteInput={inviteInput} 
-            setInviteInput={setInviteInput} 
-            addFriend={addFriend} 
-            removeFriend={removeFriend}
-            currentParticipants={currentParticipants} 
-            handleKickUser={handleKickUser} 
-            error={error} 
-            todayDate={todayDate}
+            formData={formData} handleChange={handleChange} handleSubmit={handleSubmit} isEditMode={isEditMode}
+            stopInput={stopInput} setStopInput={setStopInput} addStop={addStop} removeStop={removeStop}
+            inviteInput={inviteInput} setInviteInput={setInviteInput} addFriend={addFriend} removeFriend={removeFriend}
+            currentParticipants={currentParticipants} handleKickUser={handleKickUser} error={error} todayDate={todayDate}
         />
-
-        {/* COMPONENTE PREVIEW (DESTRA) */}
-        <TripPreview 
-            mapPoints={mapPoints} 
-            routePath={routePath} 
-            duration={duration} 
-            formData={formData} 
-        />
-
+        <TripPreview mapPoints={mapPoints} routePath={routePath} duration={duration} formData={formData} />
       </div>
     </div>
   );

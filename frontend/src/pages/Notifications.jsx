@@ -4,7 +4,9 @@ import '../App.css';
 import NotificationItem from '../components/NotificationItem';
 import NotificationModal from '../components/NotificationModal';
 
-// Helper per il testo
+// CORRETTO
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const getActionText = (type) => {
     switch(type) {
         case 'richiesta_partecipazione': return 'vuole unirsi al tuo viaggio:';
@@ -17,7 +19,6 @@ const getActionText = (type) => {
     }
 };
 
-// Funzioni sicure per estrarre ID e Titolo
 const extractTripId = (itinerarioData) => itinerarioData?._id || itinerarioData || null;
 const extractTripTitle = (itinerarioData) => itinerarioData?.titolo || 'Dettaglio Viaggio';
 
@@ -28,14 +29,14 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
   const [loading, setLoading] = useState(true);
   const [selectedNotif, setSelectedNotif] = useState(null);
 
-  // --- 1. FETCH DATI INIZIALE ---
   useEffect(() => {
     const fetchNotifiche = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if(!token) { navigate('/login'); return; }
 
-        const res = await fetch('http://localhost:5000/api/itinerari/notifiche', {
+        // CORRETTO: `${API_URL}/...` (senza http:// davanti)
+        const res = await fetch(`${API_URL}/api/itinerari/notifiche`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -60,10 +61,8 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
     fetchNotifiche();
   }, [navigate]);
 
-  // --- 2. REAL-TIME SOCKET.IO ---
   useEffect(() => {
     if (!socket) return;
-
     const handleNewNotification = (nuovaNotifica) => {
         const notificaFormattata = {
             id: nuovaNotifica._id,
@@ -78,19 +77,17 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
         };
         setNotifications(prev => [notificaFormattata, ...prev]);
     };
-
     socket.on("nuova_notifica", handleNewNotification);
     return () => { socket.off("nuova_notifica", handleNewNotification); };
   }, [socket]); 
 
-  // --- GESTORI EVENTI ---
   const handleDelete = async (e, id) => {
     e.stopPropagation(); 
     if(!window.confirm("Vuoi eliminare questa notifica?")) return;
-
     try {
         const token = localStorage.getItem('accessToken');
-        const res = await fetch(`http://localhost:5000/api/itinerari/notifiche/${id}`, {
+        // CORRETTO
+        const res = await fetch(`${API_URL}/api/itinerari/notifiche/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -104,7 +101,8 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
   const handleMarkAllRead = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        await fetch('http://localhost:5000/api/itinerari/notifiche/leggi-tutte', {
+        // CORRETTO
+        await fetch(`${API_URL}/api/itinerari/notifiche/leggi-tutte`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -114,20 +112,17 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
   };
 
   const handleNotificationClick = async (note) => {
-      // 1. Update UI locale
       setNotifications(prev => prev.map(n => n.id === note.id ? { ...n, isRead: true } : n));
-      
-      // 2. Update Backend
       try {
           const token = localStorage.getItem('accessToken');
-          await fetch(`http://localhost:5000/api/itinerari/notifiche/${note.id}/leggi`, {
+          // CORRETTO
+          await fetch(`${API_URL}/api/itinerari/notifiche/${note.id}/leggi`, {
               method: 'PUT',
               headers: { 'Authorization': `Bearer ${token}` }
           });
           if (onRefreshNotifications) onRefreshNotifications();
       } catch (error) { console.error(error); }
 
-      // 3. Azione
       if (note.type === 'richiesta_partecipazione') {
           setSelectedNotif(note);
       } else if (note.tripId) {
@@ -139,7 +134,8 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
       if (!selectedNotif) return;
       try {
         const token = localStorage.getItem('accessToken');
-        const res = await fetch('http://localhost:5000/api/itinerari/accetta', {
+        // CORRETTO
+        const res = await fetch(`${API_URL}/api/itinerari/accetta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
@@ -161,7 +157,8 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
       if (!window.confirm("Rifiutare richiesta?")) return;
       try {
         const token = localStorage.getItem('accessToken');
-        const res = await fetch('http://localhost:5000/api/itinerari/rifiuta', {
+        // CORRETTO
+        const res = await fetch(`${API_URL}/api/itinerari/rifiuta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
