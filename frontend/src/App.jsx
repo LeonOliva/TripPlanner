@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { io } from "socket.io-client"; 
 import './App.css';
@@ -19,8 +19,7 @@ import Notifications from './pages/Notifications';
 import TripDetails from './pages/TripDetails';
 import VerifyEmail from './pages/VerifyEmail';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
+// Creiamo un componente interno per poter usare useLocation
 const AppContent = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('accessToken'));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -39,11 +38,12 @@ const AppContent = () => {
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     setIsLoggedIn(false);
-    if(socket) socket.disconnect(); 
+    if(socket) socket.disconnect(); // Disconnetti socket al logout
     setSocket(null);
     window.location.href = '/login'; 
   };
 
+  // Helper per decodificare il token e ottenere l'ID utente
   const getUserIdFromToken = () => {
     const token = localStorage.getItem('accessToken');
     if (!token) return null;
@@ -54,12 +54,54 @@ const AppContent = () => {
         const payload = JSON.parse(jsonPayload);
         return payload.userId || payload.id;
     } catch(e) { 
+        // FIX 1: Usiamo la variabile 'e' per evitare il warning "defined but never used"
         console.error("Errore decodifica token:", e);
         return null; 
     }
   };
 
-  const checkNotifications = useCallback(async () => {
+  // 3. GESTIONE CONNESSIONE SOCKET (REAL-TIME)
+useEffect(() => {
+    const userId = getUserIdFromToken();
+
+    // Se l'utente è loggato
+    if (isLoggedIn && userId) {
+        // Se il socket non esiste o è disconnesso, crealo
+        if (!socket || !socket.connected) {
+            const newSocket = io("http://localhost:5000", {
+                reconnection: true, // Importante per la stabilità
+                transports: ['websocket']
+            });
+
+            newSocket.on("connect", () => {
+                console.log("🔌 Socket connesso:", newSocket.id);
+                // EMETTIAMO SUBITO L'IDENTITÀ
+                console.log("👤 Invio identità per:", userId);
+                newSocket.emit("identity", userId);
+            });
+
+            newSocket.on("nuova_notifica", (notifica) => {
+                console.log("🔔 Notifica ricevuta realtime:", notifica);
+                setHasUnread(true);
+                // Opzionale: Audio bip qui
+            });
+
+            setSocket(newSocket);
+
+            return () => {
+                newSocket.disconnect();
+            };
+        } 
+        // CASO CRITICO: Se il socket esiste già ma si era riconnesso, 
+        // dobbiamo assicurarci che il server sappia ancora chi siamo
+        else if (socket.connected) {
+             socket.emit("identity", userId);
+        }
+    }
+  }, [isLoggedIn]);
+
+  // Controllo notifiche standard (API) al cambio pagina
+  const checkNotifications = async () => {
       const token = localStorage.getItem('accessToken');
       if (!token) {
           setHasUnread(false);
@@ -67,8 +109,7 @@ const AppContent = () => {
       }
 
       try {
-        // Usa la costante globale API_URL
-        const res = await fetch(`${API_URL}/api/itinerari/notifiche`, {
+        const res = await fetch('http://localhost:5000/api/itinerari/notifiche', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -79,38 +120,11 @@ const AppContent = () => {
       } catch (err) {
         console.error("Errore check notifiche", err);
       }
-  }, []); // Dipendenze vuote perché API_URL è esterno
+  };
 
-  // GESTIONE SOCKET
-  useEffect(() => {
-    const userId = getUserIdFromToken();
-
-    if (isLoggedIn && userId && !socket) {
-        
-        const newSocket = io(API_URL); 
-
-        newSocket.on("connect", () => {
-            console.log("🔌 Socket connesso:", newSocket.id);
-            newSocket.emit("identity", userId);
-        });
-
-        newSocket.on("nuova_notifica", (notifica) => {
-            console.log("🔔 Notifica ricevuta realtime:", notifica);
-            setHasUnread(true); 
-        });
-
-        setSocket(newSocket);
-
-        return () => {
-            newSocket.disconnect();
-        };
-    }
-  }, [isLoggedIn, socket]); // Rimosso API_URL dalle dipendenze perché ora è esterno
-
-  // CONTROLLO NOTIFICHE AL CAMBIO PAGINA
   useEffect(() => {
     checkNotifications();
-  }, [location.pathname, checkNotifications]); // Ora checkNotifications è sicuro grazie a useCallback
+  }, [location.pathname]);
 
  return (
     <div className="app">

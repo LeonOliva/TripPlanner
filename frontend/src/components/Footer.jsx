@@ -75,8 +75,8 @@ const Footer = () => {
               <span style={{marginLeft: '8px'}}>Progetto Universitario</span>
             </li>
             <li>Corso: Fondamenti Web</li>
-            <li>Anno: 2024-2025</li>
-            <li>Studenti: Pierluigi Zarra, Leonardo Oliva & Vishes Radhakeesoon</li>
+            <li>Anno: 2025-2026</li>
+            <li>Studenti: Pierluigi Zarra & Leonardo Oliva</li>
           </ul>
         </div>
 

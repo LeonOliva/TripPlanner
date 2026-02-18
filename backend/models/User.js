@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         unique: true,
         sparse: true 
-    },
+    }, // <--- ECCO LA VIRGOLA CHE MANCAVA!
     
     isVerified: { type: Boolean, default: false }, 
     verificationToken: { type: String },

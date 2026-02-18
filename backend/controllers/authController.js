@@ -2,17 +2,16 @@
 const User = require('../models/User') 
 const RefreshToken = require ('../models/refreshToken')
 const jwt = require ('jsonwebtoken'); 
-const crypto = require('crypto');
-const nodemailer = require('nodemailer'); 
+const crypto = require('crypto'); // <--- NUOVO: Per generare il token casuale
+const nodemailer = require('nodemailer'); // <--- NUOVO: Per inviare email
 
-// --- CONFIGURAZIONE EMAIL ---
+// --- CONFIGURAZIONE EMAIL (NUOVO) ---
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'poulgigi839@gmail.com',
-        pass: 'wwgz vxoj xwcw bdmi'
+        user: 'poulgigi839@gmail.com', // 
+        pass: 'wwgz vxoj xwcw bdmi' // 
     },
-    //antivirus
     tls: {
         rejectUnauthorized: false
     }
@@ -41,10 +40,6 @@ const generateTokens = (user) => {
 exports.registerUser = async (req, res) => {
     try {
         console.log("1. Inizio registrazione...");
-        
-        // --- AGGIUNGI QUI ---
-        const frontendUrl = process.env.FRONTEND_URL || "https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app";
-        
         const { username, email, password } = req.body;
 
         // Verifica esistenza
@@ -67,30 +62,25 @@ exports.registerUser = async (req, res) => {
         });
         await newUser.save();
         console.log("✅ Utente salvato nel DB!");
+
         console.log("4. Tentativo invio email a:", email);
-        const verifyUrl = `${frontendUrl}/verify-email/${verifyToken}`;
-
-        // --- AGGIUNGI QUESTO BLOCCO PER INVIARE L'EMAIL ---
+        const verifyUrl = `http://localhost:5173/verify-email/${verifyToken}`;
+        
+        // Aggiungiamo un await esplicito per vedere se si blocca qui
         await transporter.sendMail({
-            from: '"TripPlanner" <poulgigi839@gmail.com>',
             to: email,
-            subject: "Verifica il tuo account TripPlanner",
-            html: `
-                <h1>Benvenuto su TripPlanner!</h1>
-                <p>Clicca sul link qui sotto per verificare la tua email e attivare il tuo profilo:</p>
-                <a href="${verifyUrl}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Verifica Email</a>
-                <p>Se il bottone non funziona, copia e incolla questo link: ${verifyUrl}</p>
-            `
+            subject: 'Conferma registrazione TripPlanner',
+            html: `<p>Clicca qui: <a href="${verifyUrl}">VERIFICA</a></p>`
         });
+        
+        console.log("✅ Email inviata con successo!");
 
-        res.status(201).json({ 
-            success: true, 
-            message: "Registrazione completata! Controlla la tua email per verificare l'account." 
-        });
+        res.status(201).json({ success: true, message: "Controlla la tua email!" });
 
     } catch (error) {
         console.error("❌ ERRORE GRAVE NEL BACKEND:", error);
-        res.status(500).json({ message: "Errore durante la registrazione" });
+        // Se l'errore è di invio mail, lo vediamo qui
+        res.status(500).json({ message: "Errore durante la registrazione (forse email?)" });
     }
 };
 
@@ -229,15 +219,12 @@ exports.googleCallback = async (req, res) => {
             sameSite: 'Strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
-        const frontendUrl = process.env.FRONTEND_URL || "https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app";
-        
-        res.redirect(`${frontendUrl}/dashboard?accessToken=${accessToken}`);
+
+        res.redirect(`http://localhost:5173/dashboard?accessToken=${accessToken}`);
 
     } catch (error) {
         console.error("Errore Google Callback:", error);
-        
-        const frontendUrl = process.env.FRONTEND_URL || "https://trip-planner-krh45msup-pierluigis-projects-d8d8528c.vercel.app";
-        res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+        res.redirect('http://localhost:5173/login?error=google_auth_failed');
     }
 };
 

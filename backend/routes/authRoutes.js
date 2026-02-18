@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const passport = require('passport');
-const { verifyAccessToken } = require('../middlewares/authMiddleware'); // Assicurati che questo import sia attivo
+const { verifyAccessToken } = require('../middlewares/authMiddleware');
 
 // Registrazione Normale
 router.post('/register', authController.registerUser);

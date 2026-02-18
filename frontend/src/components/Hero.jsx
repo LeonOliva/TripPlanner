@@ -50,11 +50,6 @@ const Hero = () => {
              Visualizza gli itinerari
              <span className="material-symbols-outlined" style={{marginLeft: '8px'}}>arrow_forward</span>
           </button>
-
-          {/* Il Tutorial probabilmente non richiede login, quindi lo lasciamo libero o decidiamo dove mandarlo */}
-           <button className="btn btn-outline" style={{marginLeft: '10px'}}>
-            Tutorial
-          </button>
         </div>
       </div>
     </header>

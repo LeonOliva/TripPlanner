@@ -35,5 +35,8 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "vite": "^7.1.7"
+  },
+  "overrides": {
+    "ajv": "^8.18.0"
   }
 }

@@ -4,8 +4,8 @@ import '../App.css';
 import NotificationItem from '../components/NotificationItem';
 import NotificationModal from '../components/NotificationModal';
 
-// CORRETTO
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// 1. DEFINIAMO L'URL (Così funziona sia in locale che su Render)
+const API_URL = "http://localhost:5000";
 
 const getActionText = (type) => {
     switch(type) {
@@ -29,13 +29,14 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
   const [loading, setLoading] = useState(true);
   const [selectedNotif, setSelectedNotif] = useState(null);
 
+  // FETCH INIZIALE
   useEffect(() => {
     const fetchNotifiche = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if(!token) { navigate('/login'); return; }
 
-        // CORRETTO: `${API_URL}/...` (senza http:// davanti)
+        // Usa API_URL
         const res = await fetch(`${API_URL}/api/itinerari/notifiche`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -61,6 +62,7 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
     fetchNotifiche();
   }, [navigate]);
 
+  // SOCKET UPDATE
   useEffect(() => {
     if (!socket) return;
     const handleNewNotification = (nuovaNotifica) => {
@@ -81,41 +83,48 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
     return () => { socket.off("nuova_notifica", handleNewNotification); };
   }, [socket]); 
 
+  // --- FUNZIONI DI AZIONE (CORRETTE CON API_URL E UPDATE OTTIMISTICO) ---
+
   const handleDelete = async (e, id) => {
     e.stopPropagation(); 
     if(!window.confirm("Vuoi eliminare questa notifica?")) return;
+
+    // Aggiorna subito la UI (rimuove la notifica visivamente)
+    setNotifications(prev => prev.filter(n => n.id !== id));
+
     try {
         const token = localStorage.getItem('accessToken');
-        // CORRETTO
-        const res = await fetch(`${API_URL}/api/itinerari/notifiche/${id}`, {
+        await fetch(`${API_URL}/api/itinerari/notifiche/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if ((await res.json()).success) {
-            setNotifications(prev => prev.filter(n => n.id !== id));
-            if (onRefreshNotifications) onRefreshNotifications();
-        }
+        if (onRefreshNotifications) onRefreshNotifications();
     } catch (error) { console.error(error); }
   };
 
   const handleMarkAllRead = async () => {
+      // 1. UPDATE OTTIMISTICO: Segna tutto come letto SUBITO visivamente
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      
+      // Aggiorna il pallino rosso nella navbar
+      if (onRefreshNotifications) onRefreshNotifications(); 
+
       try {
         const token = localStorage.getItem('accessToken');
-        // CORRETTO
+        // 2. Poi chiama il server in background
         await fetch(`${API_URL}/api/itinerari/notifiche/leggi-tutte`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        if (onRefreshNotifications) onRefreshNotifications(); 
       } catch (error) { console.error("Errore lettura notifiche:", error); }
   };
 
   const handleNotificationClick = async (note) => {
+      // Update UI immediato
       setNotifications(prev => prev.map(n => n.id === note.id ? { ...n, isRead: true } : n));
+      
       try {
           const token = localStorage.getItem('accessToken');
-          // CORRETTO
           await fetch(`${API_URL}/api/itinerari/notifiche/${note.id}/leggi`, {
               method: 'PUT',
               headers: { 'Authorization': `Bearer ${token}` }
@@ -134,7 +143,6 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
       if (!selectedNotif) return;
       try {
         const token = localStorage.getItem('accessToken');
-        // CORRETTO
         const res = await fetch(`${API_URL}/api/itinerari/accetta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -144,10 +152,21 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
                 notificaId: selectedNotif.id 
             })
         });
-        if ((await res.json()).success) {
+
+        if (res.status === 401 || res.status === 403) {
+            alert("Sessione scaduta! Rifai il login.");
+            localStorage.removeItem('accessToken');
+            navigate('/login');
+            return;
+        }
+
+        const data = await res.json();
+        if (data.success) {
             alert("Utente accettato!");
             setSelectedNotif(null);
             setNotifications(prev => prev.filter(n => n.id !== selectedNotif.id));
+        } else {
+            alert(data.message || "Errore");
         }
       } catch (error) { console.error(error); }
   };
@@ -157,7 +176,6 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
       if (!window.confirm("Rifiutare richiesta?")) return;
       try {
         const token = localStorage.getItem('accessToken');
-        // CORRETTO
         const res = await fetch(`${API_URL}/api/itinerari/rifiuta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -167,7 +185,16 @@ const Notifications = ({ onRefreshNotifications, socket }) => {
                 notificaId: selectedNotif.id 
             })
         });
-        if ((await res.json()).success) {
+        
+        if (res.status === 401 || res.status === 403) {
+             alert("Sessione scaduta! Rifai il login.");
+             localStorage.removeItem('accessToken');
+             navigate('/login');
+             return;
+        }
+
+        const data = await res.json();
+        if (data.success) {
             alert("Rifiutata.");
             setSelectedNotif(null);
             setNotifications(prev => prev.filter(n => n.id !== selectedNotif.id));

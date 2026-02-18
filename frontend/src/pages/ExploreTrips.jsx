@@ -1,31 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css'; 
+
+// IMPORTIAMO I NUOVI COMPONENTI
 import ExploreHeader from '../components/ExploreHeader';
 import ExploreGrid from '../components/ExploreGrid';
 
-// CORRETTO
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 const ExploreTrips = () => {
   const navigate = useNavigate();
+  
+  // Stati
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Fetch dei dati (Logica "Smart")
   useEffect(() => {
     const fetchTrips = async () => {
       setLoading(true);
       try {
-        // CORRETTO: Usiamo i backticks (`) e la variabile API_URL
         const url = searchTerm 
-          ? `${API_URL}/api/itinerari/ricerca?search=${encodeURIComponent(searchTerm)}`
-          : `${API_URL}/api/itinerari/visualizza`;
+          ? `http://localhost:5000/api/itinerari/ricerca?search=${encodeURIComponent(searchTerm)}`
+          : `http://localhost:5000/api/itinerari/visualizza`;
 
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.success) {
+          // Filtriamo solo i viaggi pubblici
           const publicTrips = data.data.filter(trip => trip.visibilita === 'pubblica');
           setTrips(publicTrips);
         }
@@ -36,6 +38,7 @@ const ExploreTrips = () => {
       }
     };
 
+    // Debounce: aspetta 500ms dopo che l'utente smette di scrivere
     const timer = setTimeout(() => fetchTrips(), 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -46,8 +49,20 @@ const ExploreTrips = () => {
 
   return (
     <div className="explore-container">
-      <ExploreHeader searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      <ExploreGrid trips={trips} loading={loading} onViewClick={handleViewClick} />
+      
+      {/* Intestazione e Ricerca */}
+      <ExploreHeader 
+        searchTerm={searchTerm} 
+        setSearchTerm={setSearchTerm} 
+      />
+
+      {/* Griglia Risultati */}
+      <ExploreGrid 
+        trips={trips} 
+        loading={loading} 
+        onViewClick={handleViewClick} 
+      />
+
     </div>
   );
 };

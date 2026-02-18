@@ -76,7 +76,7 @@ exports.getMieiItinerari = async (req, res) => {
             ]
         })
         .sort({ createdAt: -1 })
-        .populate('autore', 'username'); // Importante per vedere il nome nella Dashboard
+        .populate('autore', 'username');
         
         res.json({ success: true, data: itinerari });
     } catch (err) {

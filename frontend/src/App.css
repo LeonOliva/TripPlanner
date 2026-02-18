@@ -911,6 +911,49 @@ input[type="text"], input[type="date"], input[type="number"] {
 [data-theme="dark"] .note-icon-wrapper { filter: brightness(0.85) contrast(1.2); }
 
 /* ==========================================================================
+   FIX MODALE "GESTISCI RICHIESTA" IN DARK MODE
+   ========================================================================== */
+
+/* 1. Scurisce lo sfondo semitrasparente dietro la modale */
+[data-theme="dark"] .modal-overlay,
+[data-theme="dark"] .overlay {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* 2. Colora la scheda della modale di scuro (Slate 800) */
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-container,
+[data-theme="dark"] .notification-modal, 
+[data-theme="dark"] .modal-card {
+  background-color: var(--surface-color) !important; /* Diventa grigio scuro */
+  color: var(--text-main) !important;                /* Testo bianco */
+  border: 1px solid var(--border-color);             /* Bordo sottile */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);        /* Ombra più profonda */
+}
+
+/* 3. Forza il colore del testo all'interno della modale */
+[data-theme="dark"] .modal-content h2,
+[data-theme="dark"] .modal-content h3,
+[data-theme="dark"] .modal-content strong {
+  color: #fff !important;
+}
+
+[data-theme="dark"] .modal-content p,
+[data-theme="dark"] .modal-content span {
+  color: var(--text-sub) !important; /* Grigio chiaro per il testo secondario */
+}
+
+/* 4. Sistema il link "Chiudi senza agire" */
+[data-theme="dark"] .modal-content a,
+[data-theme="dark"] .modal-content button.link-style {
+  color: var(--text-sub) !important;
+  text-decoration: underline;
+}
+[data-theme="dark"] .modal-content a:hover {
+  color: var(--primary-color) !important;
+}
+
+/* ==========================================================================
    16. MEDIA QUERIES (Mobile)
    ========================================================================== */
 @media (max-width: 768px) {

@@ -13,9 +13,11 @@ const verifyAccessToken = (req, res, next) => {
     jwt.verify(token, secret, (err, decoded) => {
     if (err) {
         console.error('Errore Token:', err.message);
-        return res.status(403).json({ message: 'Token non valido' }); 
+        return res.status(403).json({ message: 'Token non valido' }); // <--- QUESTO È L'ERRORE CHE VEDI
     }
-        // Mappiamo l'ID in modo sicuro provando tutte le varianti comuni
+        
+        console.log("🔍 CONTENUTO TOKEN:", decoded); 
+
         req.user = {
             id: decoded.userId || decoded.id || decoded._id, 
             email: decoded.email

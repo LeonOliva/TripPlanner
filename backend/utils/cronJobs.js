@@ -1,8 +1,9 @@
 const cron = require('node-cron');
-const Viaggio = require('../models/itinerario'); 
+const Viaggio = require('../models/itinerario'); // Assicurati che il percorso sia corretto
 
 const startCronJobs = () => {
     // Esegue il controllo OGNI MINUTO (per testare)
+    // Quando hai finito i test, cambia in '0 0 * * *' (ogni mezzanotte)
     cron.schedule('*/1 * * * *', async () => {
         try {
             const adesso = new Date();

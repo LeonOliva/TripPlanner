@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+
+// IMPORTIAMO I NUOVI COMPONENTI
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardGrid from '../components/DashboardGrid';
-
-// --- DEFINIZIONE URL BACKEND ---
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Dashboard = ({ onLogin }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
+  // Stato dati
   const [user, setUser] = useState({ name: "Viaggiatore", email: "", id: null });
   const [myTrips, setMyTrips] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- 1. LOGICA DI INIZIALIZZAZIONE (Token & Fetch) ---
   useEffect(() => {
+    // A. Gestione Token da URL (OAuth)
     const urlToken = searchParams.get('accessToken');
     if (urlToken) {
       localStorage.setItem('accessToken', urlToken);
@@ -22,6 +24,7 @@ const Dashboard = ({ onLogin }) => {
       navigate('/dashboard', { replace: true });
     }
 
+    // B. Controllo Token esistente
     const token = localStorage.getItem('accessToken');
     if (!token) {
       navigate('/login');
@@ -30,6 +33,7 @@ const Dashboard = ({ onLogin }) => {
     
     if (onLogin) onLogin();
 
+    // C. Decodifica Token per dati utente
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -44,10 +48,10 @@ const Dashboard = ({ onLogin }) => {
         console.error("Errore lettura token", e);
     }
 
+    // D. Fetch dei viaggi dal Backend
     const fetchMyTrips = async () => {
         try {
-            // --- CORREZIONE QUI ---
-            const response = await fetch(`${API_URL}/api/itinerari/miei`, {
+            const response = await fetch('http://localhost:5000/api/itinerari/miei', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -71,6 +75,9 @@ const Dashboard = ({ onLogin }) => {
     fetchMyTrips();
 
   }, [searchParams, navigate, onLogin]);
+
+
+  // --- 2. GESTORI EVENTI (HANDLERS) ---
   
   const handleCreateClick = () => {
       navigate('/create-trip');
@@ -89,8 +96,7 @@ const Dashboard = ({ onLogin }) => {
 
       try {
         const token = localStorage.getItem('accessToken');
-        // --- CORREZIONE QUI ---
-        const res = await fetch(`${API_URL}/api/itinerari/cancella/${id}`, {
+        const res = await fetch(`http://localhost:5000/api/itinerari/cancella/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -108,8 +114,7 @@ const Dashboard = ({ onLogin }) => {
 
     try {
         const token = localStorage.getItem('accessToken');
-        // --- CORREZIONE QUI ---
-        const response = await fetch(`${API_URL}/api/itinerari/abbandona/${tripId}`, {
+        const response = await fetch(`http://localhost:5000/api/itinerari/abbandona/${tripId}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -127,15 +132,21 @@ const Dashboard = ({ onLogin }) => {
     }
   };
 
+  // --- 3. RENDERIZZAZIONE ---
   return (
     <div className="dashboard-container">
+        
+        {/* Intestazione */}
         <DashboardHeader 
             userName={user.name} 
             onCreateClick={handleCreateClick} 
         />
+
         <div className="section-title-row">
             <h2>I Miei Itinerari</h2>
         </div>
+
+        {/* Griglia Viaggi */}
         <DashboardGrid 
             trips={myTrips}
             loading={loading}

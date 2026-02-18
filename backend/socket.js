@@ -1,4 +1,3 @@
-// backend/socket.js
 const { Server } = require("socket.io");
 
 let io;
@@ -14,11 +13,12 @@ const initSocket = (httpServer) => {
 
   io.on("connection", (socket) => {
     console.log("🟢 Nuovo client connesso:", socket.id);
-
+    
     socket.on("identity", (userId) => {
       if (userId) {
         userSocketMap.set(userId, socket.id);
         console.log(`👤 Utente mappato: ${userId} -> ${socket.id}`);
+        console.log("📋 Utenti online attuali:", userSocketMap.size);
       }
     });
 
@@ -40,11 +40,14 @@ const initSocket = (httpServer) => {
 const sendNotification = (destinatarioId, notifica) => {
   if (!io) return;
   
+  // Convertiamo in stringa per sicurezza nel confronto con la Map
   const socketId = userSocketMap.get(destinatarioId.toString());
   
   if (socketId) {
     io.to(socketId).emit("nuova_notifica", notifica);
-    console.log(`📡 Notifica inviata realtime a ${destinatarioId}`);
+    console.log(`📡 Notifica inviata realtime a ${destinatarioId} (Socket: ${socketId})`);
+  } else {
+    console.log(`⚠️ Utente ${destinatarioId} non connesso al socket. Notifica salvata solo su DB.`);
   }
 };
 

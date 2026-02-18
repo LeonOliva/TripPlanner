@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const http = require('http'); // Importa modulo HTTP nativo
-const { initSocket } = require('./socket'); // Importa la configurazione Socket
+const { initSocket } = require('./socket'); // Importa la tua configurazione Socket
 
 // --- IMPORTAZIONI FILE LOCALI ---
 const passport = require('./config/passport'); 
@@ -22,23 +22,22 @@ initSocket(httpServer);
 
 // --- MIDDLEWARE ---
 app.use(cors({
-    // Autorizza sia il tuo frontend su Vercel che localhost per i test
-    origin: [
-        'https://tplanner-gold.vercel.app', 
-        'http://localhost:5173'
-    ],
+    origin: 'http://localhost:5173', // Accetta il frontend locale
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true // Fondamentale per i cookie e il Refresh Token
+    credentials: true
 }));
 app.use(express.json()); 
 app.use(cookieParser()); 
 app.use(passport.initialize());
 
+// --- CONNESSIONE DATABASE ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-      console.log('MongoDB Connesso... 🟢');
+      console.log('MongoDB Connesso...');
+      // Avvia i Cron Jobs solo se il DB è connesso
       startCronJobs(); 
   })
+  .catch(err => console.error("Errore connessione MongoDB:", err));
 
 // --- ROTTE API ---
 app.use('/api/auth', authRoutes);

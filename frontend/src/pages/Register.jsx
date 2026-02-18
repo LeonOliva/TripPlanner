@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
+
+// IMPORTIAMO I NUOVI COMPONENTI
 import RegisterHeader from '../components/RegisterHeader';
 import RegisterForm from '../components/RegisterForm';
-
-const API_URL = import.meta.env.VITE_API_URL || "https://tripplanner-tvpl.onrender.com";
 
 const Register = () => {
   const navigate = useNavigate(); 
@@ -37,7 +37,7 @@ const Register = () => {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, { 
+      const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,8 +67,8 @@ const Register = () => {
   };
 
   const handleGoogleRegister = () => {
-  window.location.href = `${API_URL}/api/auth/google`;
-};
+    window.location.href = "http://localhost:5000/api/auth/google";
+  };
 
   return (
     <div className="auth-container">
