@@ -37,7 +37,7 @@ exports.creaItinerario = async (req, res) => {
         const salvato = await nuovoItinerario.save();
 
         // INVITI PRIVATI
-        if (visibility === 'privata' && sharedWith && sharedWith.length > 0) {
+        if ((visibility === 'privata' || visibility === 'privato' || visibility === 'Privato') && sharedWith && sharedWith.length > 0) {
             const utentiInvitati = await User.find({ email: { $in: sharedWith } });
 
             for (const utente of utentiInvitati) {
@@ -50,10 +50,10 @@ exports.creaItinerario = async (req, res) => {
                         messaggio: `Ti ha invitato a partecipare al viaggio privato: ${destination}`
                     });
                     
-                    // Notifica Socket
                     await notifica.populate('mittente', 'username');
                     await notifica.populate('itinerario', 'titolo');
-                    sendNotification(utente._id, notifica);
+                    
+                    sendNotification(utente._id, notifica.toJSON());
                 }
             }
         }
@@ -157,7 +157,7 @@ exports.modificaItinerario = async (req, res) => {
         if (!aggiornato) return res.status(404).json({ success: false, error: "Non trovato" });
 
         // Notifiche su modifica (inviti)
-        if (visibility === 'privata' && sharedWith && sharedWith.length > 0) {
+        if ((visibility === 'privata' || visibility === 'privato' || visibility === 'Privato') && sharedWith && sharedWith.length > 0) {
             const utentiInvitati = await User.find({ email: { $in: sharedWith } });
 
             for (const utente of utentiInvitati) {
@@ -179,7 +179,8 @@ exports.modificaItinerario = async (req, res) => {
                         
                         await notifica.populate('mittente', 'username');
                         await notifica.populate('itinerario', 'titolo');
-                        sendNotification(utente._id, notifica);
+                        
+                        sendNotification(utente._id, notifica.toJSON());
                     }
                 }
             }
